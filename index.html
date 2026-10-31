@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="الحضور">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>الحضور</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --accent:#22c55e; --text:#f1f5f9; --muted:#94a3b8; --warn:#fbbf24; --bad:#f87171; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:-apple-system, "Segoe UI", Tahoma, Arial, sans-serif; background:var(--bg); color:var(--text);
+         padding:calc(16px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom)); }
+  .wrap { max-width:460px; margin:0 auto; }
+  h1 { font-size:24px; margin:4px 0 4px; }
+  .muted { color:var(--muted); font-size:14px; line-height:1.7; }
+  .card { background:var(--card); border-radius:16px; padding:18px; margin-top:16px; }
+  label { display:block; margin:12px 0 6px; font-weight:600; }
+  input { width:100%; padding:13px; font-size:17px; border-radius:10px; border:1px solid #334155; background:#0f172a; color:var(--text); }
+  button { width:100%; border:0; border-radius:12px; font-size:18px; font-weight:700; padding:15px; margin-top:16px; cursor:pointer; }
+  .primary { background:var(--accent); color:#052e16; }
+  .ghost { background:#334155; color:var(--text); font-size:15px; padding:11px; }
+  .big { font-size:21px; padding:22px; }
+  .msg { margin-top:14px; padding:12px; border-radius:10px; font-size:15px; line-height:1.6; display:none; }
+  .msg.show { display:block; }
+  .msg.ok { background:#14532d; } .msg.err { background:#7f1d1d; } .msg.info { background:#1e3a8a; }
+  #scanner { display:none; position:fixed; inset:0; background:#000; z-index:10; flex-direction:column; align-items:center; justify-content:center; }
+  #scanner.on { display:flex; }
+  #video { width:100%; height:100%; object-fit:cover; position:absolute; inset:0; }
+  .frame { position:relative; width:72vw; max-width:340px; aspect-ratio:1; border:3px solid var(--accent); border-radius:18px; box-shadow:0 0 0 100vmax rgba(0,0,0,.45); }
+  .scanTxt { position:relative; margin-top:22px; font-size:17px; text-align:center; padding:0 20px; }
+  #closeScan { position:absolute; bottom:calc(30px + env(safe-area-inset-bottom)); width:auto; padding:12px 28px; background:#334155; color:#fff; }
+  ul { list-style:none; padding:0; margin:8px 0 0; }
+  li { display:flex; justify-content:space-between; gap:10px; padding:11px 0; border-bottom:1px solid #334155; font-size:15px; }
+  li:last-child { border-bottom:0; }
+  .st-ok { color:var(--accent); } .st-pend { color:var(--warn); } .st-bad { color:var(--bad); }
+  .row { display:flex; justify-content:space-between; align-items:center; }
+  .pill { font-size:13px; padding:4px 10px; border-radius:20px; background:#334155; }
+  canvas { display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- التسجيل لأول مرة -->
+  <section id="regView" style="display:none">
+    <h1>تسجيل الطالب</h1>
+    <p class="muted">سجّل مرة واحدة فقط وأنت متصل بالإنترنت. بعدها يرتبط حسابك بهذا التلفون، ويعمل التطبيق بدون إنترنت.</p>
+    <div class="card">
+      <label for="name">الاسم الثلاثي</label>
+      <input id="name" autocomplete="name">
+      <label for="sno">الرقم الجامعي</label>
+      <input id="sno" inputmode="numeric" autocomplete="off">
+      <button class="primary" id="regBtn">تسجيل</button>
+      <div class="msg" id="regMsg"></div>
+    </div>
+  </section>
+
+  <!-- الشاشة الرئيسية -->
+  <section id="mainView" style="display:none">
+    <div class="row">
+      <h1 id="hello"></h1>
+      <span class="pill" id="net"></span>
+    </div>
+    <p class="muted" id="who"></p>
+    <button class="primary big" id="scanBtn">📷 مسح رمز الحضور</button>
+    <div class="msg" id="mainMsg"></div>
+    <div class="card">
+      <div class="row"><strong>سجل الحضور</strong><span class="muted" id="pendCount"></span></div>
+      <ul id="list"></ul>
+      <button class="ghost" id="syncBtn">إرسال الآن</button>
+    </div>
+  </section>
+</div>
+
+<div id="scanner">
+  <video id="video" playsinline muted></video>
+  <div class="frame"></div>
+  <div class="scanTxt">وجّه الكاميرا نحو الرمز المعروض على الشاشة</div>
+  <button id="closeScan">إلغاء</button>
+</div>
+<canvas id="canvas"></canvas>
+
+<script src="config.js"></script>
+<script src="jsQR.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

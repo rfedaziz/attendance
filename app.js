@@ -10,6 +10,7 @@
     const a = new Uint8Array(16); crypto.getRandomValues(a);
     return Array.from(a, b => b.toString(16).padStart(2, "0")).join("");
   }
+  function latin(t) { return String(t).replace(/[٠-٩]/g, d => d.charCodeAt(0) - 0x660).replace(/[۰-۹]/g, d => d.charCodeAt(0) - 0x6F0); }
   function msg(el, text, kind) { el.textContent = text; el.className = "msg show " + kind; }
   function fmt(t) {
     const d = new Date(t);
@@ -19,13 +20,19 @@
 
   async function post(body) {
     if (!window.SERVER_URL || SERVER_URL.indexOf("http") !== 0) throw new Error("لم يُضبط رابط الخادم في config.js");
-    const res = await fetch(SERVER_URL, { method: "POST", body: JSON.stringify(body) }); // text/plain: no CORS preflight
-    return res.json();
+    let res;
+    try {
+      res = await fetch(SERVER_URL, { method: "POST", body: JSON.stringify(body) }); // text/plain: no CORS preflight
+    } catch (e) {
+      throw new Error("ما وصل الطلب للخادم. تأكد من الإنترنت، ومن أن رابط الخادم صحيح وأن النشر بصلاحية Anyone.");
+    }
+    try { return await res.json(); }
+    catch (e) { throw new Error("الخادم ردّ بشي غير متوقع. تأكد أن الرابط ينتهي بـ /exec وأن النشر بصلاحية Anyone."); }
   }
 
   // ---------- التسجيل ----------
   $("regBtn").onclick = async () => {
-    const name = $("name").value.trim(), sno = $("sno").value.trim();
+    const name = $("name").value.trim(), sno = latin($("sno").value.trim());
     if (name.split(/\s+/).length < 2) return msg($("regMsg"), "اكتب اسمك الكامل.", "err");
     if (!sno) return msg($("regMsg"), "اكتب رقمك الجامعي.", "err");
     if (!navigator.onLine) return msg($("regMsg"), "التسجيل يحتاج إنترنت أول مرة فقط.", "err");

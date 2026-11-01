@@ -1,7 +1,9 @@
 (function () {
   "use strict";
   const $ = id => document.getElementById(id);
-  const KEY_ME = "att_me", KEY_REC = "att_records";
+  // كل نسخة من التطبيق (لكل قسم مجلد) لها بياناتها الخاصة
+  const SCOPE = location.pathname.replace(/[^/]*$/, "");
+  const KEY_ME = "att_me:" + SCOPE, KEY_REC = "att_records:" + SCOPE;
 
   function load(k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } }
   function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
@@ -52,6 +54,7 @@
   // ---------- الشاشة الرئيسية ----------
   function render() {
     const me = load(KEY_ME, {});
+    if (!me.name) return;
     const recs = load(KEY_REC, []);
     $("hello").textContent = "أهلاً " + me.name.split(" ")[0];
     $("who").textContent = me.name + " · " + me.studentNo;
@@ -84,6 +87,13 @@
     try {
       const r = await post({ action: "attend", deviceId: me.deviceId, studentNo: me.studentNo,
                              records: pend.map(p => ({ id: p.id, qr: p.qr, scannedAt: p.scannedAt })) });
+      if (!r.ok && r.unregistered) {
+        // الأستاذ حذف الطالب من الجدول: نرجع لشاشة التسجيل (الحضور غير المرسل يبقى محفوظاً)
+        save(KEY_ME, { deviceId: me.deviceId });
+        show();
+        msg($("regMsg"), "حسابك غير موجود عند الأستاذ. سجّل اسمك من جديد.", "info");
+        return;
+      }
       if (!r.ok) throw new Error(r.error);
       const recs = load(KEY_REC, []);
       r.results.forEach(x => { const t = recs.find(y => y.id === x.id); if (t) t.status = x.status; });
@@ -92,7 +102,7 @@
       if (okN) msg($("mainMsg"), "✓ تم إرسال " + okN + " حضور إلى الأستاذ.", "ok");
     } catch (e) {
       if (manual) msg($("mainMsg"), "تعذّر الإرسال: " + e.message, "err");
-    } finally { syncing = false; render(); }
+    } finally { syncing = false; if (load(KEY_ME, {}).name) render(); }
   }
 
   // ---------- الماسح ----------
@@ -145,7 +155,9 @@
     save(KEY_REC, recs);
     if (navigator.vibrate) navigator.vibrate(150);
     msg($("mainMsg"), "✓ تم تسجيل حضورك في «" + label + "». سيصل للأستاذ عند اتصالك بالإنترنت.", "ok");
-    render(); sync(false);
+    render();
+    // تأخير عشوائي بسيط حتى لا يرسل ١٠٠ طالب بنفس الثانية
+    setTimeout(() => sync(false), 2000 + Math.random() * 20000);
     return true;
   }
 
@@ -163,6 +175,9 @@
     $("mainView").style.display = reg ? "" : "none";
     if (reg) { render(); sync(false); }
   }
+
+  // إعادة المحاولة كل دقيقة تقريباً ما دام هناك حضور غير مُرسل
+  setInterval(() => { if (load(KEY_ME, {}).name) sync(false); }, 50000 + Math.random() * 20000);
 
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
